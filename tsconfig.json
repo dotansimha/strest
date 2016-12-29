@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "module": "commonjs",
+    "target": "es5",
+    "lib": ["es6", "dom"],
+    "noImplicitAny": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "types": [
+      "@types/node",
+      "@types/commander",
+      "@types/glob",
+      "@types/minimatch",
+      "@types/request",
+      "@types/form-data",
+      "@types/mkdirp"
+    ]
+  },
+  "files": [
+    "src/index.ts",
+    "src/dev-usage.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
