@@ -1,4 +1,10 @@
 import 'reflect-metadata';
 
-export * from './scenario.decorator';
-export * from './stress-test.decorator';
+export * from './decorators/stress-test';
+export * from './decorators/scenario-report';
+export * from './decorators/scenario';
+export * from './decorators/setup-report';
+export * from './decorators/setup';
+export * from './decorators/teardown-report';
+export * from './decorators/teardown';
+export * from './reports';

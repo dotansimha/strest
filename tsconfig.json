@@ -12,19 +12,16 @@
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
+    "sourceRoot": "./",
     "types": [
       "@types/node",
-      "@types/commander",
-      "@types/glob",
-      "@types/minimatch",
-      "@types/request",
-      "@types/form-data",
-      "@types/mkdirp"
+      "rxjs"
     ]
   },
   "files": [
+    "typings.d.ts",
     "src/index.ts",
-    "src/dev-usage.ts"
+    "src/dev-test.ts"
   ],
   "exclude": [
     "node_modules"
