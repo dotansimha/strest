@@ -38,6 +38,22 @@ export class MeteorStressTest {
     });
   }
 
+  subscribe(subscriptionName: string, ...args): Promise<any> {
+    return new Promise((resolve, reject) => {
+      let isDone = false;
+
+      const result = this.ddpClient.subscribe(subscriptionName, args, (err) => {
+        if (err) {
+          reject(err);
+        }
+        else {
+          isDone = true;
+          resolve(result);
+        }
+      });
+    });
+  }
+
   get ddp() {
     return this.ddpClient;
   }

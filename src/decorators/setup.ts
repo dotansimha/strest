@@ -1,6 +1,6 @@
 export interface StepResult {
   executionTime: number;
-  executionResult: number;
+  executionResult: any;
 }
 
 export interface SetupUtils {
