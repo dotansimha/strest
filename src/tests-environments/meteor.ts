@@ -80,7 +80,7 @@ export class MeteorStressTest {
     });
   }
   
-  login(username: string, email: string, password: string): Promise<any> {
+  login(username: string, email: string, password: string): Promise<LoginToken> {
     const user = this.getValidUser(email, username);
     return this.call('login', {
       user,
@@ -88,7 +88,7 @@ export class MeteorStressTest {
     });
   }
   
-  getValidUser(email: string, username: string): Object {
+  getValidUser(email: string, username: string): {username?: string, email?: string} {
     if (username && typeof username === 'string' && username !== '') {
       return {username};
     }
@@ -99,7 +99,7 @@ export class MeteorStressTest {
     }
   }
   
-  hashPassword(password: string): Object {
+  hashPassword(password: string): {digest: string, algorithm: 'sha-256'} {
     this.hash.update(password);
     return {
       digest: this.hash.digest('hex'),
@@ -111,3 +111,9 @@ export class MeteorStressTest {
     return this.ddpClient;
   }
 }
+
+export interface LoginToken {
+  id: string;
+  token: string;
+  tokenExpires: Date;
+};
