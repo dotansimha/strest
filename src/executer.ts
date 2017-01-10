@@ -8,7 +8,7 @@ import * as rawConsole from 'console';
 import * as chalk from 'chalk';
 
 const flowLog = (text: string, color: string = 'white') => {
-  rawConsole.info(chalk[color](text));
+  rawConsole.info(chalk[color].inverse(text));
 };
 
 const noop = () => {
@@ -33,12 +33,8 @@ const wrapWithExecution = (index: number) => {
       setupEndTime = Date.now();
     },
     totalTime: () => {
-      if (!setupStartTime) {
-        throw new Error('Counter was never started!');
-      }
-
-      if (!setupEndTime) {
-        throw new Error('Counter was never stopped!');
+      if (!setupStartTime || !setupEndTime) {
+        return 0;
       }
 
       return setupEndTime - setupStartTime;
@@ -81,12 +77,14 @@ const buildFlowStream = (context: any, reports: Reports, testClass: any): (index
       setupAndScenario: // Setup
         observifyFromPromiseWithContext(methods.setup, context, setupData)
           .flatMap((result) => {
-            teardownSetupResult = result;
-
             const setupResult = <StepResult>{
-              executionTime: setupData.totalTime(),
+              get executionTime() {
+                return setupData.totalTime();
+              },
               executionResult: result
             };
+
+            teardownSetupResult = setupResult;
 
             // Setup Report
             return observifyFromPromiseWithContext(reportMethods.setup, context, reports, setupResult).map(() => setupResult);
@@ -96,12 +94,14 @@ const buildFlowStream = (context: any, reports: Reports, testClass: any): (index
             return observifyFromPromiseWithContext(methods.scenario, context, scenarioData, setupResult);
           })
           .flatMap((res) => {
-            teardownScenarioResult = res;
-
             const stepResult = <StepResult>{
-              executionTime: scenarioData.totalTime(),
+              get executionTime() {
+                return scenarioData.totalTime();
+              },
               executionResult: res
             };
+
+            teardownScenarioResult = stepResult;
 
             // Scenario Report
             return observifyFromPromiseWithContext(reportMethods.scenario, context, reports, stepResult).map(() => stepResult);
@@ -110,10 +110,10 @@ const buildFlowStream = (context: any, reports: Reports, testClass: any): (index
         // Teardown
         return observifyFromPromiseWithContext(methods.teardown, context, teardownData, teardownSetupResult, teardownScenarioResult)
           .flatMap((result) => {
-            teardownSetupResult = result;
-
             const tdResult = <StepResult>{
-              executionTime: setupData.totalTime(),
+              get executionTime() {
+                return teardownData.totalTime();
+              },
               executionResult: result
             };
 
@@ -188,12 +188,14 @@ export const execute = (...classes: any[]) => {
         Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
           setTimeout(done, 100);
         }, (e) => {
-          console.log(e);
+          throw e;
         });
       }, (err) => {
         console.log('err', err);
-        //expect(err).not.toBeDefined();
+        expect(err).not.toBeDefined();
       });
     });
   });
 };
+
+export const addToTestSuite = execute;

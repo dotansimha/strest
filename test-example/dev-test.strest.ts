@@ -7,10 +7,10 @@ import {ScenarioReport} from '../src/decorators/scenario-report';
 import {Teardown} from '../src/decorators/teardown';
 import {MeteorStressTest} from '../src/tests-environments/meteor';
 import {TeardownReport} from '../src/decorators/teardown-report';
-import {execute} from '../src/executer';
+import {addToTestSuite} from '../src/executer';
 
 @StressTest({
-  name: 'Connect and run login',
+  name: 'Connect and create simple subscription',
   instances: [runInstances(2), waitTime(2000), runInstances(1)]
 })
 export class LoginStressTest extends MeteorStressTest {
@@ -82,10 +82,15 @@ export class LoginStressTest extends MeteorStressTest {
   }
 
   @TeardownReport
-  teardownReport(utils: SetupUtils, setupResult: StepResult, scenarioResult: StepResult, teardownResult: StepResult) {
-    console.log("teardown report");
+  teardownReport(reporter: Reports, setupResult: StepResult, scenarioResult: StepResult, teardownResult: StepResult) {
+    reporter.report({
+      name: 'meteorSubscription',
+      description: 'Time spent to create a single subscription',
+      data: {
+        totalTestTime: setupResult.executionTime + scenarioResult.executionTime + teardownResult.executionTime
+      }
+    });
   }
 }
 
-
-execute(LoginStressTest);
+addToTestSuite(LoginStressTest);
