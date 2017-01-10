@@ -12,7 +12,6 @@ const flowLog = (text: string, color: string = 'white') => {
 };
 
 const noop = () => {
-  console.log('noop');
 };
 
 global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = 20 * 1000;
@@ -52,9 +51,6 @@ type FlowInstance = {instance: any, setupAndScenario: Observable<any>, teardown:
 
 const buildFlowStream = (context: any, reports: Reports, testClass: any): (index: number) => FlowInstance => {
   return (index: number): FlowInstance => {
-    console.log(index);
-    flowLog(`Executing Strest Instance #${index}`, 'blue');
-
     const instance = new testClass(index, reports);
     const setupFunction = instance.$$setup || noop;
     const setupReportFunction = instance.$$setupReport || noop;
@@ -82,35 +78,34 @@ const buildFlowStream = (context: any, reports: Reports, testClass: any): (index
 
     return {
       instance: instance,
-      setupAndScenario:
-        // Setup
+      setupAndScenario: // Setup
         observifyFromPromiseWithContext(methods.setup, context, setupData)
-        .flatMap((result) => {
-          teardownSetupResult = result;
+          .flatMap((result) => {
+            teardownSetupResult = result;
 
-          const setupResult = <StepResult>{
-            executionTime: setupData.totalTime(),
-            executionResult: result
-          };
+            const setupResult = <StepResult>{
+              executionTime: setupData.totalTime(),
+              executionResult: result
+            };
 
-          // Setup Report
-          return observifyFromPromiseWithContext(reportMethods.setup, context, reports, setupResult).map(() => setupResult);
-        })
-        .flatMap((setupResult) => {
-          // Scenario
-          return observifyFromPromiseWithContext(methods.scenario, context, scenarioData, setupResult);
-        })
-        .flatMap((res) => {
-          teardownScenarioResult = res;
+            // Setup Report
+            return observifyFromPromiseWithContext(reportMethods.setup, context, reports, setupResult).map(() => setupResult);
+          })
+          .flatMap((setupResult) => {
+            // Scenario
+            return observifyFromPromiseWithContext(methods.scenario, context, scenarioData, setupResult);
+          })
+          .flatMap((res) => {
+            teardownScenarioResult = res;
 
-          const stepResult = <StepResult>{
-            executionTime: scenarioData.totalTime(),
-            executionResult: res
-          };
+            const stepResult = <StepResult>{
+              executionTime: scenarioData.totalTime(),
+              executionResult: res
+            };
 
-          // Scenario Report
-          return observifyFromPromiseWithContext(reportMethods.scenario, context, reports, stepResult).map(() => stepResult);
-        }),
+            // Scenario Report
+            return observifyFromPromiseWithContext(reportMethods.scenario, context, reports, stepResult).map(() => stepResult);
+          }),
       teardown: () => {
         // Teardown
         return observifyFromPromiseWithContext(methods.teardown, context, teardownData, teardownSetupResult, teardownScenarioResult)
@@ -130,7 +125,7 @@ const buildFlowStream = (context: any, reports: Reports, testClass: any): (index
   };
 };
 
-const resolveExecutor = (baseObservable: Observable<any>, singleLogic: Function, executor: InstanceOption, counter, teardownInstances: any[]): Observable<any> => {
+const resolveExecutor = (singleLogic: Function, executor: InstanceOption, counter, teardownInstances: any[]): Observable<any> => {
   if (typeof executor === 'number') {
     executor = {
       totalCount: executor
@@ -139,18 +134,19 @@ const resolveExecutor = (baseObservable: Observable<any>, singleLogic: Function,
 
   if (executor['totalCount']) {
     const times = executor['totalCount'];
-
-    let obs = baseObservable;
+    let obs = Observable.of(null);
 
     for (let i = 0; i < times; i++) {
       counter.count++;
 
-      obs = obs.flatMap(() => {
-        const instance = singleLogic(counter.count);
-        teardownInstances.push(instance.teardown);
+      (function (index) {
+        obs = obs.do(() => flowLog(`Executing instance #${index}...`, 'blue')).flatMap(() => {
+          const instance = singleLogic(index);
+          teardownInstances.push(instance.teardown);
 
-        return instance.setupAndScenario;
-      });
+          return instance.setupAndScenario;
+        });
+      })(counter.count);
     }
 
     return obs;
@@ -158,7 +154,7 @@ const resolveExecutor = (baseObservable: Observable<any>, singleLogic: Function,
   else if (executor['timeToWait']) {
     const time = executor['timeToWait'];
 
-    return baseObservable.delay(time);
+    return Observable.of(null).do(() => flowLog(`Waiting ${time}ms before next execution...`, 'grey')).delay(time);
   }
 };
 
@@ -177,32 +173,27 @@ export const execute = (...classes: any[]) => {
     const singleFlow = buildFlowStream(instance, reports, testClass);
 
     it(testName, (done) => {
-      let resultObs = Observable.of(null);
-
       const counter = {
         count: 0
       };
 
       const teardownInstances = [];
+      let obsRes = Observable.of(null);
 
-      executionOrder.forEach((executor) => {
-        resultObs = resolveExecutor(resultObs, singleFlow, executor, counter, teardownInstances);
+      executionOrder.forEach(executor => {
+        obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, executor, counter, teardownInstances));
       });
 
-      resultObs
-        .subscribe((res) => {
-          console.log(`Flow execution is done, running teardown...`);
-
-          Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
-            done();
-          }, (e) => {
-            console.log(e);
-          });
-
-        }, (err) => {
-          throw err;
-          //expect(err).not.toBeDefined();
+      obsRes.do(() => flowLog(`Flow execution is done, running teardown methods...`, 'white')).subscribe(() => {
+        Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
+          setTimeout(done, 100);
+        }, (e) => {
+          console.log(e);
         });
+      }, (err) => {
+        console.log('err', err);
+        //expect(err).not.toBeDefined();
+      });
     });
   });
 };

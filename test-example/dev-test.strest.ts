@@ -11,7 +11,7 @@ import {execute} from '../src/executer';
 
 @StressTest({
   name: 'Connect and run login',
-  instances: [runInstances(1), waitTime(2000), runInstances(1)]
+  instances: [runInstances(2), waitTime(2000), runInstances(1)]
 })
 export class LoginStressTest extends MeteorStressTest {
   @Setup
