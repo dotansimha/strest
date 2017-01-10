@@ -18,11 +18,10 @@ export class LoginStressTest extends MeteorStressTest {
   createStress(utils: SetupUtils) {
     utils.startTime();
 
-    return this.connect('http://localhost:3000').then(() => {
-      utils.stopTime();
-
-      return this.ddp;
-    });
+    return this.connect('http://localhost:3000')
+               .then(() => this.login('admin', null, '123456'))
+               .then(() => utils.stopTime())
+               .then(() => this.ddp);
   }
 
   @SetupReport
