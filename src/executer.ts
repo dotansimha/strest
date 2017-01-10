@@ -14,7 +14,7 @@ const flowLog = (text: string, color: string = 'white') => {
 const noop = () => {
 };
 
-global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = 20 * 1000;
+global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = 1000 * 1000;
 
 const observifyFromPromiseWithContext = (func, context, ...args): Observable<any> => {
   return Observable.fromPromise(new Promise((resolve) => {

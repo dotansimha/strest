@@ -11,7 +11,7 @@ import {addToTestSuite} from '../src/executer';
 
 @StressTest({
   name: 'Connect and create simple subscription',
-  instances: [runInstances(2), waitTime(2000), runInstances(1)]
+  instances: [runInstances(100), waitTime(20 * 1000), runInstances(200)]
 })
 export class LoginStressTest extends MeteorStressTest {
   @Setup
@@ -77,8 +77,10 @@ export class LoginStressTest extends MeteorStressTest {
 
   @Teardown
   teardown(utils: SetupUtils, setupResult: StepResult, scenarioResult: StepResult) {
-     this.unsubscribe('myData');
-     this.disconnect();
+    utils.startTime();
+    this.unsubscribe('myData');
+    this.disconnect();
+    utils.stopTime();
   }
 
   @TeardownReport
