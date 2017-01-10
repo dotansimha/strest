@@ -1,14 +1,13 @@
-import {StressTest, waitTime, runInstances} from './decorators/stress-test';
-import {Setup, SetupUtils, StepResult} from './decorators/setup';
-import {Reports} from './reports';
-import {SetupReport} from './decorators/setup-report';
-import {Scenario} from './decorators/scenario';
-import {ScenarioReport} from './decorators/scenario-report';
-import {Teardown} from './decorators/teardown';
-import {MeteorStressTest} from './tests-environments/meteor';
-import DDPStatic = DDP.DDPStatic;
-import {TeardownReport} from './decorators/teardown-report';
-
+import {StressTest, waitTime, runInstances} from '../src/decorators/stress-test';
+import {Setup, SetupUtils, StepResult} from '../src/decorators/setup';
+import {Reports} from '../src/reports';
+import {SetupReport} from '../src/decorators/setup-report';
+import {Scenario} from '../src/decorators/scenario';
+import {ScenarioReport} from '../src/decorators/scenario-report';
+import {Teardown} from '../src/decorators/teardown';
+import {MeteorStressTest} from '../src/tests-environments/meteor';
+import {TeardownReport} from '../src/decorators/teardown-report';
+import {execute} from '../src/executer';
 
 @StressTest({
   name: 'Connect and run login',
@@ -36,7 +35,7 @@ export class LoginStressTest extends MeteorStressTest {
       }
     });
 
-    expect(setupResult.executionTime).toBeLessThan(100);
+    expect(setupResult.executionTime).toBeLessThan(500);
   }
 
   @Scenario
@@ -78,7 +77,8 @@ export class LoginStressTest extends MeteorStressTest {
 
   @Teardown
   teardown(utils: SetupUtils, setupResult: StepResult, scenarioResult: StepResult) {
-    console.log("teardown");
+     this.unsubscribe('myData');
+     this.disconnect();
   }
 
   @TeardownReport
@@ -86,3 +86,6 @@ export class LoginStressTest extends MeteorStressTest {
     console.log("teardown report");
   }
 }
+
+
+execute(LoginStressTest);

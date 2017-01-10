@@ -1,16 +1,21 @@
 import 'reflect-metadata';
 
-import {LoginStressTest} from './dev-test';
 import {Observable} from 'rxjs';
 import {StressTestOptions, InstanceOption} from './decorators/stress-test';
 import {Reports} from './reports';
 import {SetupUtils, StepResult} from './decorators/setup';
+import * as rawConsole from 'console';
+import * as chalk from 'chalk';
+
+const flowLog = (text: string, color: string = 'white') => {
+  rawConsole.info(chalk[color](text));
+};
 
 const noop = () => {
   console.log('noop');
 };
 
-jasmine['DEFAULT_TIMEOUT_INTERVAL'] = 20 * 1000;
+global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = 20 * 1000;
 
 const observifyFromPromiseWithContext = (func, context, ...args): Observable<any> => {
   return Observable.fromPromise(new Promise((resolve) => {
@@ -43,17 +48,14 @@ const wrapWithExecution = (index: number) => {
   };
 };
 
-interface MethodsBundle {
-  setup?: Function;
-  scenario?: Function;
-  teardown?: Function;
-}
-
 type FlowInstance = {instance: any, setupAndScenario: Observable<any>, teardown: Function};
 
 const buildFlowStream = (context: any, reports: Reports, testClass: any): (index: number) => FlowInstance => {
   return (index: number): FlowInstance => {
-    const instance = new testClass();
+    console.log(index);
+    flowLog(`Executing Strest Instance #${index}`, 'blue');
+
+    const instance = new testClass(index, reports);
     const setupFunction = instance.$$setup || noop;
     const setupReportFunction = instance.$$setupReport || noop;
     const scenarioFunction = instance.$$scenario || noop;
@@ -190,8 +192,13 @@ export const execute = (...classes: any[]) => {
       resultObs
         .subscribe((res) => {
           console.log(`Flow execution is done, running teardown...`);
-          console.log(teardownInstances.length);
-          done();
+
+          Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
+            done();
+          }, (e) => {
+            console.log(e);
+          });
+
         }, (err) => {
           throw err;
           //expect(err).not.toBeDefined();
@@ -199,5 +206,3 @@ export const execute = (...classes: any[]) => {
     });
   });
 };
-
-execute(LoginStressTest);

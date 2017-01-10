@@ -4,20 +4,12 @@
   "description": "Stress tests",
   "main": "dist/index.js",
   "scripts": {
-    "build-tests": "tsc -p tsconfig.test.json",
-    "watch": "tsc --watch",
     "clean": "rimraf ./dist",
     "lint": "tslint src/**/*.ts",
     "prebuild": "npm run clean && npm run lint",
     "build": "tsc",
-    "prestart": "npm run build",
-    "start": "cd dist && node gql-gen.js",
-    "debug": "cd dist && node --inspect --debug-brk gql-gen.js",
-    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
-    "create-git-tag": "git tag $(cat package.json | $(npm bin)/json version)",
-    "dev": "cd dist && nodemon --ext ts,js,d.ts dev-usage.js",
-    "prepare": "npm run build && npm run test && npm run create-git-tag && git push && git push --tags",
-    "test": "jest"
+    "predev": "npm run build",
+    "dev": "cd dist && node index.js ../test-example/dev-test.strest.ts --verbose"
   },
   "keywords": [],
   "author": "Dotan Simha <dotansimha@gmail.com>",
@@ -38,11 +30,12 @@
     "transform": {
       "^.+\\.(ts|tsx)$": "<rootDir>/src/jest/transformer.js"
     },
-    "testRegex": "/src/executer.(ts|tsx|js)$",
+    "testRegex": ".*?",
     "testEnvironment": "node"
   },
   "dependencies": {
-    "@types/expect": "^1.13.31",
+    "@types/chalk": "^0.4.31",
+    "@types/expect": "^1.20.0",
     "assert": "^1.4.1",
     "commander": "^2.9.0",
     "ddp": "^0.12.1",

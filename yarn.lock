@@ -2,15 +2,19 @@
 # yarn lockfile v1
 
 
+"@types/chalk@^0.4.31":
+  version "0.4.31"
+  resolved "https://registry.yarnpkg.com/@types/chalk/-/chalk-0.4.31.tgz#a31d74241a6b1edbb973cf36d97a2896834a51f9"
+
 "@types/commander@^2.3.31":
   version "2.3.31"
   resolved "https://registry.yarnpkg.com/@types/commander/-/commander-2.3.31.tgz#c60e5517091f9e2200a5e2063a830eddac4a7036"
   dependencies:
     "@types/node" "*"
 
-"@types/expect@^1.13.31":
-  version "1.13.31"
-  resolved "https://registry.yarnpkg.com/@types/expect/-/expect-1.13.31.tgz#3290a74f6ee1dce8a77923fbd1f17d9aa25f5246"
+"@types/expect@^1.20.0":
+  version "1.20.0"
+  resolved "https://registry.yarnpkg.com/@types/expect/-/expect-1.20.0.tgz#c475daba54c243a177b17540c959428f56b5ccf4"
 
 "@types/form-data@*":
   version "0.0.33"

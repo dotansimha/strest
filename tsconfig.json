@@ -20,8 +20,7 @@
   },
   "files": [
     "typings.d.ts",
-    "src/index.ts",
-    "src/dev-test.ts"
+    "src/index.ts"
   ],
   "exclude": [
     "node_modules"

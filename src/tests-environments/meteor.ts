@@ -1,8 +1,9 @@
-import * as DDPClient from 'ddp';
+const DDPClient = require('ddp');
 import {parse} from 'url';
 
 export class MeteorStressTest {
-  private ddpClient: DDPClient;
+  private ddpClient;
+  private subscriptions = {};
 
   urlToDDPOptions(url) {
     let parsedUrl = parse(url);
@@ -23,7 +24,7 @@ export class MeteorStressTest {
     };
   }
 
-  connect(ddpUrl?: string): Promise<DDPClient> {
+  connect(ddpUrl?: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.ddpClient = new DDPClient(this.urlToDDPOptions(ddpUrl));
       this.ddpClient.connect((error) => {
@@ -36,6 +37,14 @@ export class MeteorStressTest {
         resolve(this.ddpClient);
       });
     });
+  }
+
+  disconnect() {
+    return this.ddpClient.close();
+  }
+
+  unsubscribe(subscriptionName: string) {
+    return this.ddpClient.unsubscribe(this.subscriptions[subscriptionName]);
   }
 
   subscribe(subscriptionName: string, ...args): Promise<any> {
@@ -51,6 +60,8 @@ export class MeteorStressTest {
           resolve(result);
         }
       });
+
+      this.subscriptions[subscriptionName] = result;
     });
   }
 
