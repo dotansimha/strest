@@ -4,11 +4,11 @@ import {Observable} from 'rxjs';
 import {StressTestOptions, InstanceOption} from './decorators/stress-test';
 import {Reports} from './reports';
 import {SetupUtils, StepResult} from './decorators/setup';
-//import * as rawConsole from 'console';
-//import * as chalk from 'chalk';
+import * as rawConsole from 'console';
+import * as chalk from 'chalk';
 
 const flowLog = (text: string, color = 'white') => {
-  //rawConsole.info(chalk[color].inverse(text));
+  rawConsole.info(chalk[color].inverse(text));
 };
 
 const noop = () => {
