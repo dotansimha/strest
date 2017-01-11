@@ -1,6 +1,6 @@
 {
   "name": "strest",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Stress tests",
   "main": "dist/index.js",
   "scripts": {
@@ -26,6 +26,7 @@
   "dependencies": {
     "@types/chalk": "^0.4.31",
     "@types/expect": "^1.20.0",
+    "@types/jest": "^16.0.1",
     "assert": "^1.4.1",
     "commander": "^2.9.0",
     "ddp": "^0.12.1",
@@ -42,7 +43,6 @@
   "devDependencies": {
     "@types/commander": "^2.3.31",
     "@types/glob": "^5.0.30",
-    "@types/jest": "^16.0.1",
     "@types/mkdirp": "^0.3.29",
     "@types/node": "^6.0.54",
     "@types/request": "^0.0.37",
