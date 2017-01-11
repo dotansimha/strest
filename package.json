@@ -22,7 +22,20 @@
       "path": "./node_modules/cz-conventional-changelog"
     }
   },
-
+  "jest": {
+    "verbose": false,
+    "collectCoverage": false,
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "<rootDir>/transformer/typescript.js"
+    },
+    "testRegex": ".*?",
+    "testEnvironment": "node"
+  },
   "dependencies": {
     "@types/chalk": "^0.4.31",
     "@types/expect": "^1.20.0",
