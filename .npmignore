@@ -7,3 +7,8 @@ tslint.json
 tsconfig.json
 typings.d.ts
 yarn.lock
+node_modules
+test-example
+.bithoundrc
+.gitignore
+.npmignore

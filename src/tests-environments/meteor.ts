@@ -2,6 +2,12 @@ const DDPClient = require('ddp');
 import {parse} from 'url';
 import {createHash} from 'crypto';
 
+export interface LoginToken {
+  id: string;
+  token: string;
+  tokenExpires: Date;
+}
+
 export class MeteorStressTest {
   private ddpClient;
   private subscriptions = {};
@@ -111,9 +117,3 @@ export class MeteorStressTest {
     return this.ddpClient;
   }
 }
-
-export interface LoginToken {
-  id: string;
-  token: string;
-  tokenExpires: Date;
-};

@@ -20,7 +20,8 @@
   },
   "files": [
     "typings.d.ts",
-    "src/index.ts"
+    "src/index.ts",
+    "src/strest.ts"
   ],
   "exclude": [
     "node_modules"

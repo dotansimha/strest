@@ -1,3 +1,4 @@
+import {addToTestSuite} from '../executer';
 export type TimeInterval = {
   timeToWait: number;
 };
@@ -28,5 +29,7 @@ export interface StressTestOptions {
 export const StressTest = (options: StressTestOptions = {instances: [1]}) => {
   return (target: any) => {
     target.$$config = options;
+
+    addToTestSuite(target);
   };
 };
