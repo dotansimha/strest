@@ -31,7 +31,7 @@
       "js"
     ],
     "transform": {
-      "^.+\\.(ts|tsx)$": "<rootDir>/transformer/typescript.js"
+      "^.+\\.(ts|tsx)$": "<rootDir>/src/transformer/typescript.js"
     },
     "testRegex": ".*?",
     "testEnvironment": "node"
