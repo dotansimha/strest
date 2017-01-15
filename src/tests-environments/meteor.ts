@@ -11,7 +11,6 @@ export interface LoginToken {
 export class MeteorStressTest {
   private ddpClient;
   private subscriptions = {};
-  private hash = createHash('sha256');
 
   urlToDDPOptions(url) {
     let parsedUrl = parse(url);
@@ -106,9 +105,11 @@ export class MeteorStressTest {
   }
   
   hashPassword(password: string): {digest: string, algorithm: 'sha-256'} {
-    this.hash.update(password);
+    const hash = createHash('sha256');
+    hash.update(password);
+
     return {
-      digest: this.hash.digest('hex'),
+      digest: hash.digest('hex'),
       algorithm: 'sha-256',
     };
   }
