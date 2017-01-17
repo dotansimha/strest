@@ -172,32 +172,36 @@ export const execute = (...classes: any[]) => {
     const reports = new Reports();
     const testName = classConfig.name || testClass.name;
     const executionOrder = classConfig.instances;
+    const repeatExecution = classConfig.repeat || 1;
     const instance = new testClass();
     const singleFlow = buildFlowStream(instance, reports, testClass);
 
-    it(testName, (done) => {
-      const counter = {
-        count: 0
-      };
-
-      const teardownInstances = [];
-      let obsRes = Observable.of(null);
-
-      executionOrder.forEach(executor => {
-        obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, executor, counter, teardownInstances));
-      });
-
-      obsRes.do(() => flowLog(`Flow execution is done, running teardown methods...`, 'white')).subscribe(() => {
-        Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
-          setTimeout(done, 100);
-        }, (e) => {
-          throw e;
+    for (let i = 0; i < repeatExecution; i++) {
+        
+      it(`${testName} execution #${i}`, (done) => {
+        const counter = {
+          count: 0
+        };
+  
+        const teardownInstances = [];
+        let obsRes = Observable.of(null);
+  
+        executionOrder.forEach(executor => {
+          obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, executor, counter, teardownInstances));
         });
-      }, (err) => {
-        console.log('err', err.stack);
-        expect(err).not.toBeDefined();
+  
+        obsRes.do(() => flowLog(`Flow execution is done, running teardown methods...`, 'white')).subscribe(() => {
+          Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
+            setTimeout(done, 100);
+          }, (e) => {
+            throw e;
+          });
+        }, (err) => {
+          console.log('err', err.stack);
+          expect(err).not.toBeDefined();
+        });
       });
-    });
+    }
   });
 };
 
