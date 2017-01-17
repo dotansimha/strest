@@ -197,7 +197,7 @@ export const execute = (...classes: any[]) => {
             throw e;
           });
         }, (err) => {
-          console.log('err', err);
+          console.log('err', err.stack);
           expect(err).not.toBeDefined();
         });
       });
