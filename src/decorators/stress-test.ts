@@ -24,6 +24,7 @@ export type InstanceOption = number | TimeInterval | Execution;
 export interface StressTestOptions {
   name?: string;
   instances: InstanceOption[];
+  repeat?: number;
 }
 
 export const StressTest = (options: StressTestOptions = {instances: [1]}) => {
