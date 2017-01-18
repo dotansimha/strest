@@ -1,6 +1,6 @@
 {
   "name": "strest",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "description": "Stress tests",
   "main": "dist/index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "prebuild": "npm run clean && npm run lint",
     "build": "tsc",
     "predev": "npm run build",
-    "dev": "cd dist && node strest.js ../test-example/dev-test.strest.ts --verbose"
+    "dev": "cd dist && node strest.js ../test-example/*.strest.ts --verbose"
   },
   "bin": {
     "strest": "dist/strest.js"

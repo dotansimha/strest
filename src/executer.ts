@@ -48,15 +48,15 @@ const wrapWithExecution = (index: number) => {
 
 type FlowInstance = {instance: any, setupAndScenario: Observable<any>, teardown: Function};
 
-const buildFlowStream = (context: any, reports: Reports, testClass: any): (index: number) => FlowInstance => {
+const buildFlowStream = (reports: Reports, testClass: any): (index: number) => FlowInstance => {
   return (index: number): FlowInstance => {
-    const instance = new testClass(index, reports);
-    const setupFunction = instance.$$setup || noop;
-    const setupReportFunction = instance.$$setupReport || noop;
-    const scenarioFunction = instance.$$scenario || noop;
-    const scenarioReportFunction = instance.$$scenarioReport || noop;
-    const teardownFunction = instance.$$teardown || noop;
-    const teardownReportFunction = instance.$$teardownReport || noop;
+    const context = new testClass(index, reports);
+    const setupFunction = context.$$setup || noop;
+    const setupReportFunction = context.$$setupReport || noop;
+    const scenarioFunction = context.$$scenario || noop;
+    const scenarioReportFunction = context.$$scenarioReport || noop;
+    const teardownFunction = context.$$teardown || noop;
+    const teardownReportFunction = context.$$teardownReport || noop;
 
     const methods = {
       setup: setupFunction,
@@ -76,7 +76,7 @@ const buildFlowStream = (context: any, reports: Reports, testClass: any): (index
     let teardownSetupResult, teardownScenarioResult;
 
     return {
-      instance: instance,
+      instance: context,
       setupAndScenario: // Setup
         observifyFromPromiseWithContext(methods.setup, context, setupData)
           .flatMap((result) => {
@@ -173,23 +173,21 @@ export const execute = (...classes: any[]) => {
     const testName = classConfig.name || testClass.name;
     const executionOrder = classConfig.instances;
     const repeatExecution = classConfig.repeat || 1;
-    const instance = new testClass();
-    const singleFlow = buildFlowStream(instance, reports, testClass);
+    const singleFlow = buildFlowStream(reports, testClass);
 
     for (let i = 0; i < repeatExecution; i++) {
-        
       it(`${testName} execution #${i}`, (done) => {
         const counter = {
           count: 0
         };
-  
+
         const teardownInstances = [];
         let obsRes = Observable.of(null);
-  
+
         executionOrder.forEach(executor => {
           obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, executor, counter, teardownInstances));
         });
-  
+
         obsRes.do(() => flowLog(`Flow execution is done, running teardown methods...`, 'white')).subscribe(() => {
           Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
             setTimeout(done, 100);
