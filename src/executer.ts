@@ -155,13 +155,13 @@ const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: 
       counter.count++;
 
       (function (ind) {
-        obs = obs.do(() => log(`\tExecuting instance #${ind}...`, 'blue')).flatMap(() => {
+        obs = obs.do(() => log(`\t⌙ Executing instance #${ind}...`, 'blue')).flatMap(() => {
           const instance = singleLogic(ind);
           teardownInstances.push(instance.teardown);
 
           return instance.setupAndScenario
             .catch((err) => {
-              log('\t\t' + String(err), 'red');
+              log('\t\t⌙ ' + String(err), 'red');
 
               if (stopOnError) {
                 throw err;
@@ -187,7 +187,7 @@ const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: 
   else if (executor['timeToWait']) {
     const time = executor['timeToWait'];
 
-    return Observable.of(null).do(() => log(`\tWaiting ${time}ms before next execution...`, 'cyan')).delay(time);
+    return Observable.of(null).do(() => log(`\t⌙Waiting ${time}ms before next execution...`, 'cyan')).delay(time);
   }
 };
 
@@ -211,7 +211,7 @@ export const execute = (...classes: any[]) => {
       const executionStr = executionOrderIns.asString();
 
       for (let i = 1; i <= repeatExecution; i++) {
-        const title = `#${i} - ${testName} (${executionStr})`;
+        const title = `[ #${i} ][ ${executionStr} ] - ${testName}`;
 
         it(title, () => {
           return new Promise((resolve, reject) => {
@@ -220,7 +220,7 @@ export const execute = (...classes: any[]) => {
             };
 
             const teardownInstances = [];
-            let obsRes = Observable.of(null).do(() => { bgLog(`Executing repetition #${i}`, 'yellow'); });
+            let obsRes = Observable.of(null).do(() => { bgLog(`${title} - EXEC...`, 'yellow'); });
 
             executionOrder.forEach(executor => {
               obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, stopOnError, executor, counter, teardownInstances));
