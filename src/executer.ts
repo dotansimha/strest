@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import {Observable} from 'rxjs';
-import {StressTestOptions, InstanceOption} from './decorators/stress-test';
+import {StressTestOptions, InstanceOption, ExecutionInstance} from './decorators/stress-test';
 import {Reports} from './reports';
 import {SetupUtils, StepResult} from './decorators/setup';
 import * as rawConsole from 'console';
@@ -171,35 +171,42 @@ export const execute = (...classes: any[]) => {
 
     const reports = new Reports();
     const testName = classConfig.name || testClass.name;
-    const executionOrder = classConfig.instances;
+    const executionsOrder = classConfig.instances;
     const repeatExecution = classConfig.repeat || 1;
     const singleFlow = buildFlowStream(reports, testClass);
 
-    for (let i = 0; i < repeatExecution; i++) {
-      it(`${testName} execution #${i}`, (done) => {
-        const counter = {
-          count: 0
-        };
+    executionsOrder.forEach((executionOrderIns: ExecutionInstance) => {
+      const executionOrder = executionOrderIns.getArr();
+      const executionStr = executionOrderIns.asString();
 
-        const teardownInstances = [];
-        let obsRes = Observable.of(null);
+      for (let i = 1; i <= repeatExecution; i++) {
+        const title = `${testName} (${executionStr}) - Repetition #${i}`;
 
-        executionOrder.forEach(executor => {
-          obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, executor, counter, teardownInstances));
-        });
+        it(title, (done) => {
+          const counter = {
+            count: 0
+          };
 
-        obsRes.do(() => flowLog(`Flow execution is done, running teardown methods...`, 'white')).subscribe(() => {
-          Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
-            setTimeout(done, 100);
-          }, (e) => {
-            throw e;
+          const teardownInstances = [];
+          let obsRes = Observable.of(null).do(() => flowLog(title, 'white'));
+
+          executionOrder.forEach(executor => {
+            obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, executor, counter, teardownInstances));
           });
-        }, (err) => {
-          console.log('err', err.stack);
-          expect(err).not.toBeDefined();
+
+          obsRes.do(() => flowLog(`Flow execution is done, running teardown methods...`, 'white')).subscribe(() => {
+            Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
+              setTimeout(done, 100);
+            }, (e) => {
+              throw e;
+            });
+          }, (err) => {
+            console.log('err', err.stack);
+            expect(err).not.toBeDefined();
+          });
         });
-      });
-    }
+      }
+    });
   });
 };
 

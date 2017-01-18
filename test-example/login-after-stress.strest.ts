@@ -14,8 +14,11 @@ import {
 } from '../src/index';
 
 @StressTest({
+  repeat: 10,
   name: 'Connect and create simple subscription',
-  instances: [runInstances(1)]
+  instances: [
+    runInstances(1).waitTime(10000)
+  ]
 })
 export class LoginStressTest extends MeteorStressTest {
   constructor(private instanceNumber: number) {
