@@ -7,17 +7,28 @@ import {SetupUtils, StepResult} from './decorators/setup';
 import * as rawConsole from 'console';
 import * as chalk from 'chalk';
 
-const flowLog = (text: string, color = 'white') => {
+const log = (text: string, color = 'white') => {
+  rawConsole.info(chalk[color](text));
+};
+
+const bgLog = (text: string, color = 'white') => {
   rawConsole.info(chalk[color].inverse(text));
+};
+
+const underlineLog = (text: string, color = 'white') => {
+  rawConsole.info(chalk[color].underline(text));
+};
+
+const underlineBgLog = (text: string, color = 'white') => {
+  rawConsole.info(chalk[color].underline.inverse(text));
 };
 
 const noop = () => {
 };
 
-declare const it;
-declare const expect;
+declare const it, expect, fail;
 
-global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = 1000 * 1000;
+global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = Math.pow(2, 31) - 1;
 
 const observifyFromPromiseWithContext = (func, context, ...args): Observable<any> => {
   return Observable.fromPromise(new Promise((resolve) => {
@@ -128,7 +139,7 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
   };
 };
 
-const resolveExecutor = (singleLogic: Function, executor: InstanceOption, counter, teardownInstances: any[]): Observable<any> => {
+const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: InstanceOption, counter, teardownInstances: any[]): Observable<any> => {
   if (typeof executor === 'number') {
     executor = {
       totalCount: executor
@@ -138,26 +149,45 @@ const resolveExecutor = (singleLogic: Function, executor: InstanceOption, counte
   if (executor['totalCount']) {
     const times = executor['totalCount'];
     let obs = Observable.of(null);
+    const failedExecutions = [];
 
     for (let i = 0; i < times; i++) {
       counter.count++;
 
-      (function (index) {
-        obs = obs.do(() => flowLog(`Executing instance #${index}...`, 'blue')).flatMap(() => {
-          const instance = singleLogic(index);
+      (function (ind) {
+        obs = obs.do(() => log(`\tExecuting instance #${ind}...`, 'blue')).flatMap(() => {
+          const instance = singleLogic(ind);
           teardownInstances.push(instance.teardown);
 
-          return instance.setupAndScenario;
+          return instance.setupAndScenario
+            .catch((err) => {
+              log('\t\t' + String(err), 'red');
+
+              if (stopOnError) {
+                throw err;
+              }
+
+              failedExecutions.push({
+                index: ind,
+                error: err
+              });
+
+              return Observable.of(null);
+            });
         });
       })(counter.count);
     }
 
-    return obs;
+    return obs.do(() => {
+      if (failedExecutions.length > 0) {
+        throw new Error('Some of instances failed to execute: ' + failedExecutions.map(i => i.index).join(', '));
+      }
+    });
   }
   else if (executor['timeToWait']) {
     const time = executor['timeToWait'];
 
-    return Observable.of(null).do(() => flowLog(`Waiting ${time}ms before next execution...`, 'grey')).delay(time);
+    return Observable.of(null).do(() => log(`\tWaiting ${time}ms before next execution...`, 'cyan')).delay(time);
   }
 };
 
@@ -172,6 +202,7 @@ export const execute = (...classes: any[]) => {
     const reports = new Reports();
     const testName = classConfig.name || testClass.name;
     const executionsOrder = classConfig.instances;
+    const stopOnError = classConfig.stopOnError;
     const repeatExecution = classConfig.repeat || 1;
     const singleFlow = buildFlowStream(reports, testClass);
 
@@ -180,29 +211,33 @@ export const execute = (...classes: any[]) => {
       const executionStr = executionOrderIns.asString();
 
       for (let i = 1; i <= repeatExecution; i++) {
-        const title = `${testName} (${executionStr}) - Repetition #${i}`;
+        const title = `#${i} - ${testName} (${executionStr})`;
 
-        it(title, (done) => {
-          const counter = {
-            count: 0
-          };
+        it(title, () => {
+          return new Promise((resolve, reject) => {
+            const counter = {
+              count: 0
+            };
 
-          const teardownInstances = [];
-          let obsRes = Observable.of(null).do(() => flowLog(title, 'white'));
+            const teardownInstances = [];
+            let obsRes = Observable.of(null).do(() => { bgLog(`Executing repetition #${i}`, 'yellow'); });
 
-          executionOrder.forEach(executor => {
-            obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, executor, counter, teardownInstances));
-          });
-
-          obsRes.do(() => flowLog(`Flow execution is done, running teardown methods...`, 'white')).subscribe(() => {
-            Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn())).subscribe(() => {
-              setTimeout(done, 100);
-            }, (e) => {
-              throw e;
+            executionOrder.forEach(executor => {
+              obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, stopOnError, executor, counter, teardownInstances));
             });
-          }, (err) => {
-            console.log('err', err.stack);
-            expect(err).not.toBeDefined();
+
+            obsRes
+              .do(() => log(`Flow execution is done, running teardown methods...`, 'green'))
+              .flatMap(() => {
+                return Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn()));
+              })
+              .subscribe(() => {
+                setTimeout(resolve, 100);
+              }, (e) => {
+                setTimeout(() => {
+                  reject(e);
+                }, 100);
+              });
           });
         });
       }

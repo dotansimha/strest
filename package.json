@@ -9,7 +9,7 @@
     "prebuild": "npm run clean && npm run lint",
     "build": "tsc",
     "predev": "npm run build",
-    "dev": "cd dist && node strest.js ../test-example/*.strest.ts --verbose"
+    "dev": "cd dist && node strest.js ../test-example/*.strest.ts"
   },
   "bin": {
     "strest": "dist/strest.js"

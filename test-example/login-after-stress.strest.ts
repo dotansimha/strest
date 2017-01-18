@@ -6,7 +6,6 @@ import {
   SetupReport,
   Reports,
   StressTest,
-  waitTime,
   runInstances,
   Setup,
   SetupUtils,
@@ -14,10 +13,10 @@ import {
 } from '../src/index';
 
 @StressTest({
-  repeat: 10,
+  repeat: 1,
   name: 'Connect and create simple subscription',
   instances: [
-    runInstances(1).waitTime(10000)
+    runInstances(5)
   ]
 })
 export class LoginStressTest extends MeteorStressTest {
@@ -30,7 +29,6 @@ export class LoginStressTest extends MeteorStressTest {
   createStress(utils: SetupUtils) {
     utils.startTime();
 
-    console.log("ins", this.instanceNumber);
     return super.connect('http://gefen-dev:3000/')
       .then(utils.stopTime);
   }
