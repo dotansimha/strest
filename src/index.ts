@@ -9,3 +9,4 @@ export * from './decorators/teardown-report';
 export * from './decorators/teardown';
 export * from './reports';
 export * from './tests-environments/meteor';
+export * from './tests-environments/meteor-jsaccounts';
