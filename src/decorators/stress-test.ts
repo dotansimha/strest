@@ -78,6 +78,7 @@ export interface StressTestOptions {
   instances: ExecutionInstance[];
   repeat?: number;
   stopOnError?: boolean;
+  parallel?: boolean;
 }
 
 export const StressTest = (options: StressTestOptions = {instances: [ runInstances(1) ]}) => {

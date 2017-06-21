@@ -8,6 +8,8 @@ import * as rawConsole from 'console';
 import * as chalk from 'chalk';
 import { ExecutionErrors } from './exeution-error';
 
+const DEBUG = !!process.env.DEBUG;
+
 const log = (text: string, color = 'white') => {
   rawConsole.info(chalk[color](text));
 };
@@ -140,7 +142,7 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
   };
 };
 
-const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: InstanceOption, counter, teardownInstances: any[]): Observable<any> => {
+const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: InstanceOption, counter, teardownInstances: any[], parallel: boolean): Observable<any> => {
   if (typeof executor === 'number') {
     executor = {
       totalCount: executor
@@ -152,31 +154,36 @@ const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: 
     let obs = Observable.of(null);
     const failedExecutions = [];
 
-    for (let i = 0; i < times; i++) {
-      counter.count++;
+    const buildExec = ind => {
+      const instance = singleLogic(ind);
+      teardownInstances.push(instance.teardown);
 
-      (function (ind) {
-        obs = obs.do(() => log(`\t⌙ Executing instance #${ind}...`, 'blue')).flatMap(() => {
-          const instance = singleLogic(ind);
-          teardownInstances.push(instance.teardown);
+      return Observable.of(ind).do(ind => log(`\t⌙ Executing instance #${ind + 1}...`, 'blue')).flatMap(() =>
+        instance.setupAndScenario
+          .catch((err) => {
+            log('\t\t⌙ ' + String(err), 'red');
 
-          return instance.setupAndScenario
-            .catch((err) => {
-              log('\t\t⌙ ' + String(err), 'red');
+            if (stopOnError) {
+              throw err;
+            }
 
-              if (stopOnError) {
-                throw err;
-              }
-
-              failedExecutions.push({
-                index: ind,
-                error: err
-              });
-
-              return Observable.of(null);
+            failedExecutions.push({
+              index: ind + 1,
+              error: err
             });
-        });
-      })(counter.count);
+
+            return Observable.of(null);
+          }));
+    };
+
+    if (parallel) {
+      counter.count = counter.count + times;
+      obs = obs.flatMapTo(Observable.forkJoin(new Array(times).fill(null).map((dummy, ind) => buildExec(ind))));
+    } else {
+      for (let i = 0; i < times; i++) {
+        counter.count++;
+        obs = obs.flatMap(() => buildExec(i));
+      }
     }
 
     return obs.do(() => {
@@ -204,6 +211,7 @@ export const execute = (...classes: any[]) => {
     const testName = classConfig.name || testClass.name;
     const executionsOrder = classConfig.instances;
     const stopOnError = classConfig.stopOnError;
+    const parallel = classConfig.parallel;
     const repeatExecution = classConfig.repeat || 1;
     const singleFlow = buildFlowStream(reports, testClass);
 
@@ -222,11 +230,11 @@ export const execute = (...classes: any[]) => {
 
             const teardownInstances = [];
             let obsRes = Observable.of(null).do(() => {
-              bgLog(`${title} - EXEC...`, 'yellow');
+              bgLog(`${title} - EXEC (${parallel ? 'Parallel' : 'Serial'})...`, 'yellow');
             });
 
             executionOrder.forEach(executor => {
-              obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, stopOnError, executor, counter, teardownInstances));
+              obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, stopOnError, executor, counter, teardownInstances, parallel));
             });
 
             obsRes
