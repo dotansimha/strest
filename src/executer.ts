@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 
-import {Observable} from 'rxjs';
-import {StressTestOptions, InstanceOption, ExecutionInstance} from './decorators/stress-test';
-import {Reports} from './reports';
-import {SetupUtils, StepResult} from './decorators/setup';
+import { Observable } from 'rxjs';
+import { StressTestOptions, InstanceOption, ExecutionInstance } from './decorators/stress-test';
+import { Reports } from './reports';
+import { SetupUtils, StepResult } from './decorators/setup';
 import * as rawConsole from 'console';
 import * as chalk from 'chalk';
+import { ExecutionErrors } from './exeution-error';
 
 const log = (text: string, color = 'white') => {
   rawConsole.info(chalk[color](text));
@@ -57,7 +58,7 @@ const wrapWithExecution = (index: number) => {
   };
 };
 
-type FlowInstance = {instance: any, setupAndScenario: Observable<any>, teardown: Function};
+type FlowInstance = { instance: any, setupAndScenario: Observable<any>, teardown: Function };
 
 const buildFlowStream = (reports: Reports, testClass: any): (index: number) => FlowInstance => {
   return (index: number): FlowInstance => {
@@ -180,7 +181,7 @@ const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: 
 
     return obs.do(() => {
       if (failedExecutions.length > 0) {
-        throw new Error('Some of instances failed to execute: ' + failedExecutions.map(i => i.index).join(', '));
+        throw new ExecutionErrors('Some of instances failed to execute!', failedExecutions);
       }
     });
   }
@@ -220,7 +221,9 @@ export const execute = (...classes: any[]) => {
             };
 
             const teardownInstances = [];
-            let obsRes = Observable.of(null).do(() => { bgLog(`${title} - EXEC...`, 'yellow'); });
+            let obsRes = Observable.of(null).do(() => {
+              bgLog(`${title} - EXEC...`, 'yellow');
+            });
 
             executionOrder.forEach(executor => {
               obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, stopOnError, executor, counter, teardownInstances));
