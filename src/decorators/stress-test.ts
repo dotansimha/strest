@@ -6,6 +6,7 @@ export type TimeInterval = {
 
 export type Execution = {
   totalCount: number;
+  parallel: boolean;
 };
 
 const waitTimeInner = (timeInMs: number): TimeInterval => {
@@ -14,8 +15,9 @@ const waitTimeInner = (timeInMs: number): TimeInterval => {
   };
 };
 
-const runInstancesInner = (count: number): Execution => {
+const runInstancesInner = (count: number, parallel = false): Execution => {
   return {
+    parallel,
     totalCount: count
   };
 };
@@ -52,8 +54,8 @@ export class ExecutionInstance {
     return this;
   }
 
-  public runInstances(count: number) {
-    this.arr.push(runInstancesInner(count));
+  public runInstances(count: number, parallel = false) {
+    this.arr.push(runInstancesInner(count, parallel));
 
     return this;
   }
@@ -65,10 +67,10 @@ export const waitTime = (time: number) => {
   return ins.waitTime(time);
 };
 
-export const runInstances = (count: number) => {
+export const runInstances = (count: number, parallel = false) => {
   const ins = new ExecutionInstance();
 
-  return ins.runInstances(count);
+  return ins.runInstances(count, parallel);
 };
 
 export type InstanceOption = TimeInterval | Execution;
@@ -78,7 +80,6 @@ export interface StressTestOptions {
   instances: ExecutionInstance[];
   repeat?: number;
   stopOnError?: boolean;
-  parallel?: boolean;
 }
 
 export const StressTest = (options: StressTestOptions = {instances: [ runInstances(1) ]}) => {

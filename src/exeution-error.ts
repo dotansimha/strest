@@ -8,7 +8,7 @@ export class ExecutionErrors extends Error {
     ${failExecutions.map(e => `
     Instance #${e.index}
     
-    ${e.error.stack.toString()}
+    ${e.error && e.error.stack ? e.error.stack.toString() : String(e.error)}
     `).join('\r\n')}`);
   }
 }

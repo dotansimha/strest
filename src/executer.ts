@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { Observable } from 'rxjs';
 import { StressTestOptions, InstanceOption, ExecutionInstance } from './decorators/stress-test';
-import { Reports } from './reports';
+import { EExecutionStep, Reports } from './reports';
 import { SetupUtils, StepResult } from './decorators/setup';
 import * as rawConsole from 'console';
 import * as chalk from 'chalk';
@@ -11,6 +11,14 @@ import { ExecutionErrors } from './exeution-error';
 const DEBUG = !!process.env.DEBUG;
 
 const log = (text: string, color = 'white') => {
+  rawConsole.info(chalk[color](text));
+};
+
+const logDebug = (text: string, color = 'white') => {
+  if (DEBUG) {
+    return;
+  }
+
   rawConsole.info(chalk[color](text));
 };
 
@@ -29,7 +37,7 @@ const underlineBgLog = (text: string, color = 'white') => {
 const noop = () => {
 };
 
-declare const it, expect, fail;
+declare const it, expect, fail, describe, test, afterAll, beforeEach, beforeAll, afterEach;
 
 global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = Math.pow(2, 31) - 1;
 
@@ -64,6 +72,8 @@ type FlowInstance = { instance: any, setupAndScenario: Observable<any>, teardown
 
 const buildFlowStream = (reports: Reports, testClass: any): (index: number) => FlowInstance => {
   return (index: number): FlowInstance => {
+    reports._setStep(EExecutionStep.INIT);
+    reports._setInstanceNumber(index);
     const context = new testClass(index, reports);
     const setupFunction = context.$$setup || noop;
     const setupReportFunction = context.$$setupReport || noop;
@@ -94,6 +104,7 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
       setupAndScenario: // Setup
         observifyFromPromiseWithContext(methods.setup, context, setupData)
           .flatMap((result) => {
+            logDebug(`\t\t⌙ DONE SETUP (${index + 1})`, 'blue');
             const setupResult = <StepResult>{
               get executionTime() {
                 return setupData.totalTime();
@@ -104,6 +115,8 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
             teardownSetupResult = setupResult;
 
             // Setup Report
+            reports._setInstanceNumber(index);
+            reports._setStep(EExecutionStep.SETUP);
             return observifyFromPromiseWithContext(reportMethods.setup, context, reports, setupResult).map(() => setupResult);
           })
           .flatMap((setupResult) => {
@@ -111,6 +124,8 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
             return observifyFromPromiseWithContext(methods.scenario, context, scenarioData, setupResult);
           })
           .flatMap((res) => {
+            logDebug(`\t\t⌙ DONE SCENARIO (${index + 1})`, 'blue');
+
             const stepResult = <StepResult>{
               get executionTime() {
                 return scenarioData.totalTime();
@@ -121,12 +136,16 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
             teardownScenarioResult = stepResult;
 
             // Scenario Report
+            reports._setInstanceNumber(index);
+            reports._setStep(EExecutionStep.SCENARIO);
             return observifyFromPromiseWithContext(reportMethods.scenario, context, reports, stepResult).map(() => stepResult);
           }),
       teardown: () => {
         // Teardown
         return observifyFromPromiseWithContext(methods.teardown, context, teardownData, teardownSetupResult, teardownScenarioResult)
           .flatMap((result) => {
+            logDebug(`\t\t⌙ DONE TEARDOWN (${index + 1})`, 'blue');
+
             const tdResult = <StepResult>{
               get executionTime() {
                 return teardownData.totalTime();
@@ -135,6 +154,8 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
             };
 
             // Teardown Report
+            reports._setInstanceNumber(index);
+            reports._setStep(EExecutionStep.TEARDOWN);
             return observifyFromPromiseWithContext(reportMethods.teardown, context, reports, teardownSetupResult, teardownScenarioResult, tdResult).map(() => tdResult);
           });
       }
@@ -142,15 +163,17 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
   };
 };
 
-const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: InstanceOption, counter, teardownInstances: any[], parallel: boolean): Observable<any> => {
+const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: InstanceOption, counter, teardownInstances: any[]): Observable<any> => {
   if (typeof executor === 'number') {
     executor = {
-      totalCount: executor
+      parallel: false,
+      totalCount: executor,
     };
   }
 
   if (executor['totalCount']) {
     const times = executor['totalCount'];
+    const parallel = executor['parallel'] || false;
     let obs = Observable.of(null);
     const failedExecutions = [];
 
@@ -211,47 +234,52 @@ export const execute = (...classes: any[]) => {
     const testName = classConfig.name || testClass.name;
     const executionsOrder = classConfig.instances;
     const stopOnError = classConfig.stopOnError;
-    const parallel = classConfig.parallel;
     const repeatExecution = classConfig.repeat || 1;
     const singleFlow = buildFlowStream(reports, testClass);
 
-    executionsOrder.forEach((executionOrderIns: ExecutionInstance) => {
-      const executionOrder = executionOrderIns.getArr();
-      const executionStr = executionOrderIns.asString();
+    describe(`[${testName}]`, () => {
+      executionsOrder.forEach((executionOrderIns: ExecutionInstance) => {
+        const executionOrder = executionOrderIns.getArr();
+        const executionStr = executionOrderIns.asString();
 
-      for (let i = 1; i <= repeatExecution; i++) {
-        const title = `[ #${i} ][ ${executionStr} ] - ${testName}`;
+        for (let i = 1; i <= repeatExecution; i++) {
+          const title = `[ #${i} ][ ${executionStr} ]`;
 
-        it(title, () => {
-          return new Promise((resolve, reject) => {
-            const counter = {
-              count: 0
-            };
+          it(title, () => {
+            return new Promise((resolve, reject) => {
+              const counter = {
+                count: 0
+              };
 
-            const teardownInstances = [];
-            let obsRes = Observable.of(null).do(() => {
-              bgLog(`${title} - EXEC (${parallel ? 'Parallel' : 'Serial'})...`, 'yellow');
-            });
-
-            executionOrder.forEach(executor => {
-              obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, stopOnError, executor, counter, teardownInstances, parallel));
-            });
-
-            obsRes
-              .do(() => log(`Flow execution is done, running teardown methods...`, 'green'))
-              .flatMap(() => {
-                return Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn()));
-              })
-              .subscribe(() => {
-                setTimeout(resolve, 100);
-              }, (e) => {
-                setTimeout(() => {
-                  reject(e);
-                }, 100);
+              const teardownInstances = [];
+              let obsRes = Observable.of(null).do(() => {
+                bgLog(`${title} - EXEC...`, 'yellow');
               });
+
+              executionOrder.forEach(executor => {
+                obsRes = obsRes.flatMapTo(resolveExecutor(singleFlow, stopOnError, executor, counter, teardownInstances));
+              });
+
+              obsRes
+                .do(() => log(`Flow execution is done, running teardown methods...`, 'green'))
+                .flatMap(() => {
+                  return Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn()));
+                })
+                .subscribe(() => {
+                  setTimeout(resolve, 100);
+                }, (e) => {
+                  setTimeout(() => {
+                    reject(e);
+                  }, 100);
+                });
+            });
           });
-        });
-      }
+        }
+      });
+
+      afterAll(() => {
+        bgLog(JSON.stringify(reports._reports), 'yellow');
+      });
     });
   });
 };

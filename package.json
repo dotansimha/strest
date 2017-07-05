@@ -1,6 +1,6 @@
 {
   "name": "strest",
-  "version": "0.0.36",
+  "version": "0.0.42",
   "description": "Stress tests",
   "main": "dist/index.js",
   "scripts": {
