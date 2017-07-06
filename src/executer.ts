@@ -4,28 +4,9 @@ import { Observable } from 'rxjs';
 import { StressTestOptions, InstanceOption, ExecutionInstance, StrestConfig } from './decorators/stress-test';
 import { EExecutionStep, Reports } from './reports';
 import { SetupUtils, StepResult } from './decorators/setup';
-import * as rawConsole from 'console';
-import * as chalk from 'chalk';
 import * as path from 'path';
 import { ExecutionErrors } from './exeution-error';
-
-const DEBUG = !!process.env.DEBUG;
-
-const log = (text: string, color = 'white') => {
-  rawConsole.info(chalk[color](text));
-};
-
-const logDebug = (text: string, color = 'white') => {
-  if (!DEBUG) {
-    return;
-  }
-
-  rawConsole.info(chalk[color](text));
-};
-
-const bgLog = (text: string, color = 'white') => {
-  rawConsole.info(chalk[color].inverse(text));
-};
+import { bgLog, log, logDebug } from './log';
 
 const noop = () => {
 };
@@ -240,12 +221,13 @@ export const execute = (...classes: any[]) => {
 
     const reports = new Reports();
     const testName = classConfig.name || testClass.name;
+    const testDesc = classConfig.description || testClass.description;
     const executionsOrder = classConfig.instances;
     const stopOnError = classConfig.stopOnError;
     const repeatExecution = classConfig.repeat || 1;
     const singleFlow = buildFlowStream(reports, testClass);
 
-    describe(`[${testName}]`, function () {
+    describe(`[${testDesc}]`, function () {
       executionsOrder.forEach((executionOrderIns: ExecutionInstance) => {
         const executionOrder = executionOrderIns.getArr();
         const executionStr = executionOrderIns.asString();
@@ -286,7 +268,13 @@ export const execute = (...classes: any[]) => {
       });
 
       afterAll(function () {
-        reports.saveReport(reports, testName, strestConfig.reporters, path.resolve(process.cwd(), strestConfig.reportDirectory));
+        logDebug('afterAll called: executing reporters...');
+
+        try {
+          reports.saveReport(reports, testName, testDesc, strestConfig.reporters, path.resolve(process.cwd(), strestConfig.reportDirectory));
+        } catch (e) {
+          logDebug(`afterAll error: ${e.toString()}`);
+        }
       });
     });
   });

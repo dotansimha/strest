@@ -1,6 +1,6 @@
 {
   "name": "strest",
-  "version": "0.0.55",
+  "version": "0.0.68",
   "description": "Stress tests",
   "main": "dist/index.js",
   "scripts": {
@@ -31,7 +31,7 @@
       "js"
     ],
     "transform": {
-      "^.+\\.(ts|tsx)$": "<rootDir>/src/transformer/typescript.js"
+      "^.+\\.(ts|tsx)$": "<rootDir>/transformer/typescript.js"
     },
     "testRegex": ".*?",
     "testEnvironment": "node"

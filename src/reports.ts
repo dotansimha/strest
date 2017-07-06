@@ -1,5 +1,6 @@
 import { BaseReporter } from './reporters/base-reporter';
 import { HtmlReporter } from './reporters/html-reporter';
+import { log, logDebug } from './log';
 
 export const EReportType = {
   NOTE: 'NOTE',
@@ -73,16 +74,23 @@ export class Reports {
     this._reports.get(this._step).push(params);
   }
 
-  saveReport(reports: Reports, testName: string, reporters: string[], path: string) {
+  saveReport(reports: Reports, testName: string, testDescription: string, reporters: string[], path: string) {
+    logDebug(`saveReport called for test: ${testName}`);
+
     if (reporters.length === 0 || !path) {
+      logDebug('No reports configured...');
+
       return;
     }
 
     reporters.forEach((reporterName: string) => {
+      logDebug(`Writing report using ${reporterName} reporter...`);
+
       const reporter = this._reporters.get(reporterName);
+      logDebug(`Reporter ${reporterName} exists: ${!!reporter}`);
 
       if (reporter) {
-        reporter.writeTestReport(testName, reports, path);
+        reporter.writeTestReport(testName, testDescription, reports, path);
       }
     });
   }

@@ -12,3 +12,4 @@ test-example
 .bithoundrc
 .gitignore
 .npmignore
+!transformer

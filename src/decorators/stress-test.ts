@@ -5,11 +5,6 @@ export interface StrestConfig {
   reportDirectory: string;
 }
 
-export const DEFAULT_CONFIG: StrestConfig = {
-  reporters: [],
-  reportDirectory: './reports/',
-};
-
 export type TimeInterval = {
   timeToWait: number;
 };
@@ -87,6 +82,7 @@ export type InstanceOption = TimeInterval | Execution;
 
 export interface StressTestOptions {
   name?: string;
+  description?: string;
   instances: ExecutionInstance[];
   repeat?: number;
   stopOnError?: boolean;
