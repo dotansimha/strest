@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 
 import { Observable } from 'rxjs';
-import { StressTestOptions, InstanceOption, ExecutionInstance } from './decorators/stress-test';
+import { StressTestOptions, InstanceOption, ExecutionInstance, StrestConfig } from './decorators/stress-test';
 import { EExecutionStep, Reports } from './reports';
 import { SetupUtils, StepResult } from './decorators/setup';
 import * as rawConsole from 'console';
 import * as chalk from 'chalk';
+import * as path from 'path';
 import { ExecutionErrors } from './exeution-error';
 
 const DEBUG = !!process.env.DEBUG;
@@ -15,7 +16,7 @@ const log = (text: string, color = 'white') => {
 };
 
 const logDebug = (text: string, color = 'white') => {
-  if (DEBUG) {
+  if (!DEBUG) {
     return;
   }
 
@@ -26,20 +27,14 @@ const bgLog = (text: string, color = 'white') => {
   rawConsole.info(chalk[color].inverse(text));
 };
 
-const underlineLog = (text: string, color = 'white') => {
-  rawConsole.info(chalk[color].underline(text));
-};
-
-const underlineBgLog = (text: string, color = 'white') => {
-  rawConsole.info(chalk[color].underline.inverse(text));
-};
-
 const noop = () => {
 };
 
 declare const it, expect, fail, describe, test, afterAll, beforeEach, beforeAll, afterEach;
 
-global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = Math.pow(2, 31) - 1;
+if (global && global['jasmine']) {
+  global['jasmine']['DEFAULT_TIMEOUT_INTERVAL'] = Math.pow(2, 31) - 1;
+}
 
 const observifyFromPromiseWithContext = (func, context, ...args): Observable<any> => {
   return Observable.fromPromise(new Promise((resolve) => {
@@ -117,6 +112,10 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
             // Setup Report
             reports._setInstanceNumber(index);
             reports._setStep(EExecutionStep.SETUP);
+            reports._setTest({
+              result,
+              instance: context,
+            });
             return observifyFromPromiseWithContext(reportMethods.setup, context, reports, setupResult).map(() => setupResult);
           })
           .flatMap((setupResult) => {
@@ -138,6 +137,10 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
             // Scenario Report
             reports._setInstanceNumber(index);
             reports._setStep(EExecutionStep.SCENARIO);
+            reports._setTest({
+              result: res,
+              instance: context,
+            });
             return observifyFromPromiseWithContext(reportMethods.scenario, context, reports, stepResult).map(() => stepResult);
           }),
       teardown: () => {
@@ -156,6 +159,10 @@ const buildFlowStream = (reports: Reports, testClass: any): (index: number) => F
             // Teardown Report
             reports._setInstanceNumber(index);
             reports._setStep(EExecutionStep.TEARDOWN);
+            reports._setTest({
+              result,
+              instance: context,
+            });
             return observifyFromPromiseWithContext(reportMethods.teardown, context, reports, teardownSetupResult, teardownScenarioResult, tdResult).map(() => tdResult);
           });
       }
@@ -218,13 +225,14 @@ const resolveExecutor = (singleLogic: Function, stopOnError: boolean, executor: 
   else if (executor['timeToWait']) {
     const time = executor['timeToWait'];
 
-    return Observable.of(null).do(() => log(`\t⌙Waiting ${time}ms before next execution...`, 'cyan')).delay(time);
+    return Observable.of(null).do(() => log(`\t⌙ Waiting ${time}ms before next execution...`, 'cyan')).delay(time);
   }
 };
 
 export const execute = (...classes: any[]) => {
   (classes || []).forEach((testClass) => {
-    const classConfig: StressTestOptions = <StressTestOptions>testClass.$$config;
+    const classConfig: StressTestOptions = testClass.$$config as StressTestOptions;
+    const strestConfig: StrestConfig = testClass.$$configFile as StrestConfig;
 
     if (!classConfig) {
       throw new Error(`Class ${testClass.name} is not decorated with @StressTest()!`);
@@ -237,7 +245,7 @@ export const execute = (...classes: any[]) => {
     const repeatExecution = classConfig.repeat || 1;
     const singleFlow = buildFlowStream(reports, testClass);
 
-    describe(`[${testName}]`, () => {
+    describe(`[${testName}]`, function () {
       executionsOrder.forEach((executionOrderIns: ExecutionInstance) => {
         const executionOrder = executionOrderIns.getArr();
         const executionStr = executionOrderIns.asString();
@@ -245,7 +253,7 @@ export const execute = (...classes: any[]) => {
         for (let i = 1; i <= repeatExecution; i++) {
           const title = `[ #${i} ][ ${executionStr} ]`;
 
-          it(title, () => {
+          it(title, function () {
             return new Promise((resolve, reject) => {
               const counter = {
                 count: 0
@@ -261,7 +269,7 @@ export const execute = (...classes: any[]) => {
               });
 
               obsRes
-                .do(() => log(`Flow execution is done, running teardown methods...`, 'green'))
+                .do(() => log(`\t⌙ Flow execution is done, running teardown methods...`, 'green'))
                 .flatMap(() => {
                   return Observable.merge(...teardownInstances.map(tearndownFn => tearndownFn()));
                 })
@@ -277,8 +285,8 @@ export const execute = (...classes: any[]) => {
         }
       });
 
-      afterAll(() => {
-        bgLog(JSON.stringify(reports._reports), 'yellow');
+      afterAll(function () {
+        reports.saveReport(reports, testName, strestConfig.reporters, path.resolve(process.cwd(), strestConfig.reportDirectory));
       });
     });
   });

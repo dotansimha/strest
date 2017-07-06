@@ -1,3 +1,6 @@
+import { BaseReporter } from './reporters/base-reporter';
+import { HtmlReporter } from './reporters/html-reporter';
+
 export const EReportType = {
   NOTE: 'NOTE',
   WARNING: 'WARNING',
@@ -21,7 +24,9 @@ export interface Report {
 
 export class Reports {
   _instance: number;
+  _currentTestData: any;
   _reports: Map<string, Report[]>;
+  _reporters: Map<string, BaseReporter>;
   _step: string = EExecutionStep.INIT;
 
   constructor() {
@@ -30,10 +35,17 @@ export class Reports {
     this._reports.set(EExecutionStep.SCENARIO, []);
     this._reports.set(EExecutionStep.SETUP, []);
     this._reports.set(EExecutionStep.TEARDOWN, []);
+
+    this._reporters = new Map();
+    this._reporters.set('html', new HtmlReporter());
   }
 
   _setStep(executionStep: string) {
     this._step = executionStep;
+  }
+
+  _setTest(testData: any) {
+    this._currentTestData = testData;
   }
 
   _setInstanceNumber(instance: number) {
@@ -59,5 +71,21 @@ export class Reports {
     params.timestamp = new Date();
     params.instance = this._instance;
     this._reports.get(this._step).push(params);
+  }
+
+  saveReport(reports: Reports, testName: string, reporters: string[], path: string) {
+    if (reporters.length === 0 || !path) {
+      return;
+    }
+
+    reporters.forEach((reporterName: string) => {
+      const reporter = this._reporters.get(reporterName);
+
+      if (reporter) {
+
+      }
+    });
+
+
   }
 }

@@ -1,4 +1,14 @@
-import {addToTestSuite} from '../executer';
+import { addToTestSuite } from '../executer';
+
+export interface StrestConfig {
+  reporters: string[];
+  reportDirectory: string;
+}
+
+export const DEFAULT_CONFIG: StrestConfig = {
+  reporters: [],
+  reportDirectory: './reports/',
+};
 
 export type TimeInterval = {
   timeToWait: number;
@@ -82,9 +92,10 @@ export interface StressTestOptions {
   stopOnError?: boolean;
 }
 
-export const StressTest = (options: StressTestOptions = {instances: [ runInstances(1) ]}) => {
+export const StressTest = (options: StressTestOptions = { instances: [runInstances(1)] }) => {
   return (target: any) => {
     target.$$config = options;
+    target.$$configFile = global['$$configFile'];
 
     addToTestSuite(target);
   };
