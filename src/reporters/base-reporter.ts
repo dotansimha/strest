@@ -1,3 +1,5 @@
+import { Reports } from '../reports';
+
 export interface BaseReporter {
-  writeTestReportToFile();
+  writeTestReport(testName: string, reports: Reports, path: string);
 }

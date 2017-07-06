@@ -3,7 +3,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as jest from 'jest-cli';
-import { DEFAULT_CONFIG } from './decorators/stress-test';
+import { DEFAULT_CONFIG, StrestConfig } from './decorators/stress-test';
 
 const CONFIG_FILE_NAME = 'strest.json';
 
@@ -12,7 +12,7 @@ try {
   console.log(`Looking for strest.json config file in: ${configFile}`);
 
   if (fs.existsSync(configFile)) {
-    console.log(`Reading config from fiel: ${configFile}...`);
+    console.log(`Reading config from file: ${configFile}...`);
     global['$$configFile'] = Object.assign({}, DEFAULT_CONFIG, JSON.parse(fs.readFileSync(configFile).toString()));
   }
 } catch (e) {
@@ -21,7 +21,9 @@ try {
   console.log(e);
 }
 
-const args = [...process.argv.splice(2), '--forceExit', '-i', '--verbose', '--runInBand'];
+(global['$$configFile'] as StrestConfig).reportDirectory = path.resolve(process.cwd(), (global['$$configFile'] as StrestConfig).reportDirectory);
+
+const args = [...process.argv.splice(2), '-i', '--verbose', '--runInBand'];
 
 if (process.env.DEBUG) {
   console.log('Config file: ', global['$$configFile']);

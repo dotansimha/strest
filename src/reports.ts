@@ -82,10 +82,8 @@ export class Reports {
       const reporter = this._reporters.get(reporterName);
 
       if (reporter) {
-
+        reporter.writeTestReport(testName, reports, path);
       }
     });
-
-
   }
 }
