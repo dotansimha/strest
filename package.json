@@ -1,6 +1,6 @@
 {
   "name": "strest",
-  "version": "0.0.68",
+  "version": "0.0.70",
   "description": "Stress tests",
   "main": "dist/index.js",
   "scripts": {
@@ -39,7 +39,9 @@
   "dependencies": {
     "@types/chalk": "^0.4.31",
     "@types/expect": "^1.20.0",
+    "@types/handlebars": "^4.0.33",
     "@types/jest": "^20.0.1",
+    "@types/moment": "^2.13.0",
     "assert": "^1.4.1",
     "chalk": "^1.1.3",
     "commander": "^2.9.0",
@@ -47,10 +49,12 @@
     "expect": "^1.20.2",
     "filenamify": "^2.0.0",
     "glob": "^7.1.1",
+    "handlebars": "^4.0.10",
     "jest": "^20.0.4",
     "jest-cli": "^20.0.4",
     "meteor-typings": "^1.3.1",
     "mkdirp": "^0.5.1",
+    "moment": "^2.18.1",
     "node-fetch": "^1.7.1",
     "reflect-metadata": "^0.1.9",
     "request": "^2.79.0",
